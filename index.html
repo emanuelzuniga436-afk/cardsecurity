@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiBanco App · Proyecto Android</title>
+<meta name="description" content="App bancaria Android de demostración: Kotlin, Jetpack Compose, Material 3, Supabase y PostgreSQL con RLS.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1689D8;
+    --secondary: #62B8E8;
+    --bg: #F5F9FC;
+    --card: #FFFFFF;
+    --text: #17212B;
+    --muted: #667085;
+    --success: #32B583;
+    --error: #E5484D;
+    --warning: #C77700;
+    --line: #E4ECF3;
+    --shadow: 0 10px 30px rgba(22, 137, 216, .10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E1620;
+      --card: #16212D;
+      --text: #E8EEF4;
+      --muted: #9AA8B6;
+      --line: #243243;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  a { color: var(--primary); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+  /* Navegación */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--text); }
+  .logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: grid; place-items: center; color: #fff; font-weight: 800; }
+  .links { display: flex; gap: 22px; }
+  .links a { color: var(--muted); text-decoration: none; font-weight: 500; font-size: .95rem; }
+  .links a:hover { color: var(--primary); }
+  @media (max-width: 760px) { .links { display: none; } }
+
+  /* Hero */
+  .hero { padding: 72px 0 40px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  .pill { display: inline-block; padding: 6px 14px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); font-weight: 600; font-size: .85rem; }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.1; margin: 18px 0; letter-spacing: -.02em; }
+  h1 span { color: var(--primary); }
+  .lead { color: var(--muted); font-size: 1.15rem; max-width: 34em; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+  .btn { display: inline-block; padding: 14px 24px; border-radius: 14px; font-weight: 600; text-decoration: none; }
+  .btn.primary { background: var(--primary); color: #fff; box-shadow: var(--shadow); }
+  .btn.ghost { border: 1.5px solid var(--line); color: var(--text); background: var(--card); }
+  .stats { display: flex; gap: 28px; margin-top: 36px; flex-wrap: wrap; }
+  .stats b { display: block; font-size: 1.6rem; color: var(--primary); }
+  .stats small { color: var(--muted); }
+  .phone {
+    width: min(300px, 80vw); margin: 0 auto; border-radius: 40px; padding: 10px;
+    background: #10161D; box-shadow: 0 30px 60px rgba(22, 137, 216, .25);
+  }
+  .phone img { width: 100%; display: block; border-radius: 31px; }
+  @media (max-width: 860px) { .hero .wrap { grid-template-columns: 1fr; } .hero { padding-top: 40px; } }
+
+  section { padding: 64px 0; }
+  h2 { font-size: clamp(1.7rem, 3.5vw, 2.3rem); margin: 0 0 10px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 36px; max-width: 46em; }
+
+  /* Tarjetas */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+  .card { background: var(--card); border-radius: 20px; padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .card h3 { margin: 12px 0 6px; font-size: 1.08rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .icon { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
+  .icon svg { width: 24px; height: 24px; }
+
+  /* Galería */
+  .gallery { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 8px 4px 24px; }
+  .gallery figure { flex: 0 0 220px; margin: 0; scroll-snap-align: start; cursor: zoom-in; }
+  .gallery img { width: 100%; border-radius: 22px; box-shadow: var(--shadow); border: 1px solid var(--line); display: block; }
+  .gallery figcaption { text-align: center; color: var(--muted); font-size: .9rem; margin-top: 10px; font-weight: 500; }
+  .lightbox { position: fixed; inset: 0; background: rgba(5, 10, 16, .85); display: none; place-items: center; z-index: 50; padding: 20px; cursor: zoom-out; }
+  .lightbox.open { display: grid; }
+  .lightbox img { max-height: 92vh; max-width: 100%; border-radius: 24px; }
+
+  /* Simulador */
+  .sim { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 760px) { .sim { grid-template-columns: 1fr; } }
+  label { display: block; font-weight: 600; font-size: .9rem; margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  input[type=number] { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); font: inherit; background: var(--bg); color: var(--text); }
+  input[type=range] { width: 100%; accent-color: var(--primary); }
+  .terms { display: flex; gap: 8px; flex-wrap: wrap; }
+  .terms button { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+  .terms button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .big { font-size: 2.6rem; font-weight: 800; color: var(--primary); margin: 4px 0 12px; }
+  .kv { display: flex; justify-content: space-between; padding: 9px 0; border-top: 1px solid var(--line); }
+  .kv span { color: var(--muted); }
+  .kv b.neg { color: var(--error); }
+  .tag { display: inline-block; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--warning) 14%, transparent); color: var(--warning); font-weight: 600; font-size: .8rem; }
+  .err { color: var(--error); font-size: .9rem; min-height: 1.4em; margin-top: 8px; }
+
+  /* Tecnologías */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { padding: 8px 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); font-weight: 500; font-size: .92rem; }
+  .chip b { color: var(--primary); font-weight: 600; }
+
+  /* Arquitectura */
+  .arch { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: stretch; }
+  .arch .card { text-align: center; padding: 18px; }
+  .arch .card small { color: var(--muted); display: block; margin-top: 4px; }
+  @media (max-width: 760px) { .arch { grid-template-columns: 1fr 1fr; } }
+
+  /* Estado */
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); }
+  th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: .95rem; }
+  th { background: color-mix(in srgb, var(--primary) 8%, var(--card)); }
+  .ok { color: var(--success); font-weight: 700; }
+  .pend { color: var(--warning); font-weight: 700; }
+  .table-wrap { overflow-x: auto; }
+
+  .notice { border-left: 4px solid var(--warning); background: var(--card); padding: 18px 22px; border-radius: 14px; color: var(--muted); }
+  footer { padding: 36px 0 48px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><span class="logo">M</span>MiBanco App</a>
+    <div class="links">
+      <a href="#funciones">Funciones</a>
+      <a href="#pantallas">Pantallas</a>
+      <a href="#simulador">Simulador</a>
+      <a href="#seguridad">Seguridad</a>
+      <a href="#estado">Estado</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <span class="pill">Proyecto Android · Kotlin + Jetpack Compose</span>
+      <h1>Tu banca personal, <span>clara y segura</span> en el bolsillo.</h1>
+      <p class="lead">
+        MiBanco es una aplicación bancaria Android nativa: consulta tu cupo, revisa movimientos, gestiona créditos,
+        simula préstamos y haz solicitudes, con un backend en Supabase protegido por seguridad a nivel de fila.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="#pantallas">Ver pantallas</a>
+        <a class="btn ghost" href="#simulador">Probar el simulador</a>
+      </div>
+      <div class="stats">
+        <div><b>13</b><small>pantallas</small></div>
+        <div><b>63</b><small>pruebas ejecutadas</small></div>
+        <div><b>11</b><small>tablas con RLS</small></div>
+      </div>
+    </div>
+    <div class="phone"><img src="capturas/03_inicio.png" alt="Pantalla de inicio de MiBanco con el cupo disponible y el próximo pago"></div>
+  </div>
+</header>
+
+<section id="funciones">
+  <div class="wrap">
+    <h2>Todo lo que necesitas</h2>
+    <p class="sub">Cada botón hace algo real: consulta datos, valida, guarda o informa un error. Nada de respuestas de éxito simuladas.</p>
+    <div class="grid">
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></div><h3>Mi cupo</h3><p>Cupo total, utilizado y disponible con indicador circular, historial paginado y solicitud de aumento.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><h3>Movimientos</h3><p>Búsqueda y filtros por fecha, monto, comercio y tipo; ingresos y gastos; detalle de cada movimiento.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></div><h3>Créditos</h3><p>Saldo, cuota, cuotas pagadas y pendientes, calendario, historial de pagos y extractos.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 12h2M13 12h2M9 16h2M13 16h2"/></svg></div><h3>Simulador</h3><p>Cuota fija con fórmula documentada, comparación de plazos y tasa efectiva anual equivalente.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3>Pagos</h3><p>Validación, confirmación, comprobante e idempotencia: un pago repetido nunca se registra dos veces.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg></div><h3>Ayuda y asesor</h3><p>Preguntas frecuentes, consultas registradas y agenda con un asesor humano según el horario configurado.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></div><h3>Documentos</h3><p>Extractos y certificados descargables mediante enlaces firmados temporales desde un almacenamiento privado.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>Perfil y seguridad</h3><p>Edición de datos, preferencias, ocultar saldos y desbloqueo biométrico opcional.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pantallas">
+  <div class="wrap">
+    <h2>Pantallas</h2>
+    <p class="sub">Capturas de la app real generadas por las pruebas automáticas (Robolectric), con datos de prueba del modo DEMO. Toca una para ampliarla.</p>
+    <div class="gallery" id="gallery">
+      <figure><img loading="lazy" src="capturas/01_login.png" alt="Inicio de sesión"><figcaption>Inicio de sesión</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/03_inicio.png" alt="Inicio"><figcaption>Inicio</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/04_mi_cupo.png" alt="Mi cupo"><figcaption>Mi cupo</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/06_movimientos.png" alt="Movimientos"><figcaption>Movimientos</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/07_detalle_movimiento.png" alt="Detalle de movimiento"><figcaption>Detalle de movimiento</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/09_creditos.png" alt="Créditos"><figcaption>Créditos</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/10_detalle_credito.png" alt="Detalle de crédito"><figcaption>Detalle de crédito</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/12_confirmar_pago.png" alt="Confirmar pago"><figcaption>Confirmar pago</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/14_comprobante.png" alt="Comprobante"><figcaption>Comprobante</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/15_simulador.png" alt="Simulador"><figcaption>Simulador</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/17_ayuda.png" alt="Centro de ayuda"><figcaption>Centro de ayuda</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/18_asesor.png" alt="Asesor humano"><figcaption>Asesor humano</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/19_solicitudes.png" alt="Solicitudes"><figcaption>Solicitudes</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/21_documentos.png" alt="Documentos"><figcaption>Documentos</figcaption></figure>
+      <figure><img loading="lazy" src="capturas/22_perfil.png" alt="Perfil"><figcaption>Perfil</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="simulador">
+  <div class="wrap">
+    <h2>Prueba el simulador</h2>
+    <p class="sub">El mismo cálculo que usa la app: amortización francesa, <code>cuota = P·i / (1 − (1+i)<sup>−n</sup>)</code>. La tasa de referencia es ilustrativa y editable.</p>
+    <div class="sim">
+      <div class="card">
+        <label for="amount">Monto (COP)</label>
+        <input id="amount" type="number" min="500000" max="100000000" step="100000" value="10000000">
+        <label>Plazo (meses)</label>
+        <div class="terms" id="terms"></div>
+        <label for="rate">Tasa mensual: <span id="rateLabel"></span></label>
+        <input id="rate" type="range" min="0" max="3.5" step="0.05" value="1.8">
+        <div class="err" id="err"></div>
+      </div>
+      <div class="card">
+        <span class="tag">SIMULACIÓN · no es una oferta aprobada</span>
+        <div style="margin-top:14px;color:var(--muted);font-weight:600;font-size:.9rem">Cuota mensual estimada</div>
+        <div class="big" id="installment">—</div>
+        <div class="kv"><span>Total a pagar</span><b id="total">—</b></div>
+        <div class="kv"><span>Intereses estimados</span><b class="neg" id="interest">—</b></div>
+        <div class="kv"><span>Tasa efectiva anual equivalente</span><b id="ea">—</b></div>
+        <p style="color:var(--muted);font-size:.85rem;margin:14px 0 0">No incluye seguros, comisiones ni impuestos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="seguridad">
+  <div class="wrap">
+    <h2>Seguridad desde el diseño</h2>
+    <p class="sub">La app nunca modifica saldos ni aprueba créditos: las operaciones financieras pasan por el backend.</p>
+    <div class="arch" style="margin-bottom:22px">
+      <div class="card"><b>App Android</b><small>Compose · MVVM · Hilt</small></div>
+      <div class="card"><b>Supabase Auth</b><small>sesión y tokens</small></div>
+      <div class="card"><b>Edge Functions</b><small>pagos · URLs firmadas</small></div>
+      <div class="card"><b>PostgreSQL</b><small>RLS · auditoría</small></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Seguridad a nivel de fila</h3><p>Cada usuario solo ve y edita sus propios datos. Permisos mínimos por columna.</p></div>
+      <div class="card"><h3>Pagos idempotentes</h3><p>Bloqueo de fila, transacción y clave única: dos pagos simultáneos con la misma clave generan un solo registro.</p></div>
+      <div class="card"><h3>Auditoría</h3><p>Los eventos sensibles se registran sin guardar contraseñas, tokens ni números de tarjeta.</p></div>
+      <div class="card"><h3>Protección en el dispositivo</h3><p>Sin copias de seguridad de datos, solo HTTPS, bloqueo de capturas en producción y biometría opcional.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="tecnologia">
+  <div class="wrap">
+    <h2>Tecnología</h2>
+    <p class="sub">Construida con las versiones estables más recientes de Android Studio a noviembre de 2026.</p>
+    <div class="chips">
+      <span class="chip"><b>Kotlin</b> 2.4</span>
+      <span class="chip"><b>Jetpack Compose</b> BOM 2026.09</span>
+      <span class="chip"><b>Material 3</b></span>
+      <span class="chip"><b>Navigation</b> rutas tipadas</span>
+      <span class="chip"><b>Hilt</b> 2.60</span>
+      <span class="chip"><b>Coroutines</b> + StateFlow</span>
+      <span class="chip"><b>Room</b> 2.8</span>
+      <span class="chip"><b>DataStore</b> 1.3</span>
+      <span class="chip"><b>Retrofit</b> 3 · OkHttp 5</span>
+      <span class="chip"><b>Supabase</b> Auth + Postgrest</span>
+      <span class="chip"><b>PostgreSQL</b> + RLS</span>
+      <span class="chip"><b>Biometric API</b></span>
+      <span class="chip"><b>AGP</b> 9.5 · SDK 37</span>
+    </div>
+  </div>
+</section>
+
+<section id="estado">
+  <div class="wrap">
+    <h2>Estado del proyecto</h2>
+    <p class="sub">Resultados reales de las pruebas ejecutadas y lo que aún falta verificar.</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Verificación</th><th>Resultado</th></tr>
+        <tr><td>Pruebas unitarias y de ViewModels</td><td class="ok">✓ 53 de 53</td></tr>
+        <tr><td>Recorrido completo de la app (Robolectric)</td><td class="ok">✓ 1 de 1 · 33 capturas</td></tr>
+        <tr><td>Migraciones, RLS y pagos en PostgreSQL 17</td><td class="ok">✓ 9 de 9</td></tr>
+        <tr><td>Compilación del APK</td><td class="ok">✓ correcta</td></tr>
+        <tr><td>Pruebas en emulador o dispositivo</td><td class="pend">Pendiente</td></tr>
+        <tr><td>Conexión con un proyecto Supabase real</td><td class="pend">En configuración</td></tr>
+      </table>
+    </div>
+    <p class="notice" style="margin-top:22px">
+      <b>Proyecto de demostración.</b> MiBanco es un proyecto de software independiente, no afiliado a ninguna entidad
+      financiera, y no está certificado ni auditado para operar como banco. Los pagos se registran como operaciones
+      simuladas y los datos mostrados son de prueba.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">MiBanco App · Proyecto Android de demostración · 2026</div>
+</footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
+<script>
+  // Galería ampliable
+  const lb = document.getElementById('lightbox');
+  document.querySelectorAll('#gallery img').forEach(img => img.addEventListener('click', () => {
+    lb.querySelector('img').src = img.src;
+    lb.querySelector('img').alt = img.alt;
+    lb.classList.add('open');
+  }));
+  lb.addEventListener('click', () => lb.classList.remove('open'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
+
+  // Simulador: mismos límites y fórmula que CreditSimulator.kt
+  const cop = v => '$' + Math.round(v).toLocaleString('es-CO');
+  const pct = v => v.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + ' %';
+  const amount = document.getElementById('amount');
+  const rate = document.getElementById('rate');
+  const termsEl = document.getElementById('terms');
+  let term = 24;
+  [6, 12, 24, 36, 48, 60, 72].forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = t;
+    b.addEventListener('click', () => { term = t; calc(); });
+    termsEl.appendChild(b);
+  });
+  function calc() {
+    [...termsEl.children].forEach(b => b.classList.toggle('on', +b.textContent === term));
+    const p = +amount.value, r = +rate.value, i = r / 100;
+    document.getElementById('rateLabel').textContent = pct(r) + ' m.v.';
+    const err = document.getElementById('err');
+    const out = ['installment', 'total', 'interest', 'ea'].map(id => document.getElementById(id));
+    if (!(p >= 500000 && p <= 100000000)) {
+      err.textContent = 'El monto debe estar entre $500.000 y $100.000.000.';
+      out.forEach(o => o.textContent = '—');
+      return;
+    }
+    err.textContent = '';
+    const q = Math.round(i === 0 ? p / term : p * i / (1 - Math.pow(1 + i, -term)));
+    out[0].textContent = cop(q);
+    out[1].textContent = cop(q * term);
+    out[2].textContent = cop(q * term - p);
+    out[3].textContent = pct((Math.pow(1 + i, 12) - 1) * 100) + ' E.A.';
+  }
+  amount.addEventListener('input', calc);
+  rate.addEventListener('input', calc);
+  calc();
+</script>
+</body>
+</html>
