@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.application'
+}
+
+// El plugin de Google Services lee app/google-services.json (tu proyecto de Firebase).
+// Solo se aplica si el archivo existe, así el proyecto abre aunque aún no lo hayas conectado.
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.warn('FALTA app/google-services.json: conecta la app a Firebase (Tools > Firebase).')
+}
+
+android {
+    namespace 'com.example.gestionclientesapp'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.example.gestionclientesapp'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+
+    // Firebase: el BoM fija versiones compatibles entre sí
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-database'
+}
