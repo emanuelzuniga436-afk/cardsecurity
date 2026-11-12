@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "46946808586",
+    "firebase_url": "https://gestionclientes-b5454-default-rtdb.firebaseio.com",
+    "project_id": "gestionclientes-b5454",
+    "storage_bucket": "gestionclientes-b5454.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46946808586:android:f55209a36879072ff800f3",
+        "android_client_info": {
+          "package_name": "com.example.gestionclientesapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-MMhCzEzvz2lcXs4Svk6evGm026HrLCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
