@@ -32,10 +32,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Si la app se cerró por un error la vez anterior, mostramos el detalle
+        if (mostrarErrorAnterior()) return;
+
         setContentView(R.layout.activity_main);
 
-        // 1. Conexión con Firebase: obtenemos (o creamos) el nodo "Clientes"
-        refClientes = FirebaseDatabase.getInstance().getReference("Clientes");
+        // 1. Conexión con Firebase: obtenemos (o creamos) el nodo "Clientes".
+        //    Si Firebase está mal configurado, mostramos el error en vez de cerrar la app.
+        refClientes = FirebaseHelper.obtenerClientes(this);
 
         // 2. Enlazamos los elementos del XML con las variables Java
         etCodigo    = findViewById(R.id.etCodigo);
@@ -64,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
     // ---------------------------------------------------------------- GUARDAR
     private void guardarCliente() {
+        if (refClientes == null) { FirebaseHelper.avisarSinConexion(this); return; }
         String codigo    = etCodigo.getText().toString().trim();
         String nombre    = etNombre.getText().toString().trim();
         String apellido  = etApellido.getText().toString().trim();
@@ -81,7 +87,9 @@ public class MainActivity extends AppCompatActivity {
         Cliente cliente = new Cliente(codigo, nombre, apellido, telefono, cedula, direccion);
 
         // El código del cliente es la "llave" del nodo: Clientes/C01, Clientes/C02...
+        Runnable aviso = FirebaseHelper.avisoSiTarda(this);
         refClientes.child(codigo).setValue(cliente)
+                .addOnCompleteListener(t -> FirebaseHelper.cancelarAviso(aviso))
                 .addOnSuccessListener(unused -> {
                     Toast.makeText(this, "Cliente guardado correctamente", Toast.LENGTH_SHORT).show();
                     limpiarCampos();
@@ -93,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
 
     // ------------------------------------------------------------- ACTUALIZAR
     private void actualizarCliente() {
+        if (refClientes == null) { FirebaseHelper.avisarSinConexion(this); return; }
         String codigo = etCodigo.getText().toString().trim();
         if (codigo.isEmpty()) {
             Toast.makeText(this, "Escribe el código del cliente a actualizar", Toast.LENGTH_SHORT).show();
@@ -113,9 +122,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Primero comprobamos que el cliente exista, para no crear uno "a medias"
+        Runnable aviso = FirebaseHelper.avisoSiTarda(this);
         refClientes.child(codigo).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                FirebaseHelper.cancelarAviso(aviso);
                 if (!snapshot.exists()) {
                     Toast.makeText(MainActivity.this, "No existe un cliente con el código " + codigo,
                             Toast.LENGTH_SHORT).show();
@@ -133,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                FirebaseHelper.cancelarAviso(aviso);
                 Toast.makeText(MainActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
@@ -147,15 +159,18 @@ public class MainActivity extends AppCompatActivity {
 
     // --------------------------------------------------------------- ELIMINAR
     private void eliminarCliente() {
+        if (refClientes == null) { FirebaseHelper.avisarSinConexion(this); return; }
         String codigo = etCodigo.getText().toString().trim();
         if (codigo.isEmpty()) {
             Toast.makeText(this, "Escribe el código del cliente a eliminar", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        Runnable aviso = FirebaseHelper.avisoSiTarda(this);
         refClientes.child(codigo).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                FirebaseHelper.cancelarAviso(aviso);
                 if (!snapshot.exists()) {
                     Toast.makeText(MainActivity.this, "No existe un cliente con el código " + codigo,
                             Toast.LENGTH_SHORT).show();
@@ -173,9 +188,47 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                FirebaseHelper.cancelarAviso(aviso);
                 Toast.makeText(MainActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    // ------------------------------------------------- ERROR DE LA VEZ ANTERIOR
+    // Pantalla sencilla (sin XML) que muestra por qué se cerró la app la última vez.
+    private boolean mostrarErrorAnterior() {
+        android.content.SharedPreferences prefs =
+                getSharedPreferences(App.PREFS, MODE_PRIVATE);
+        String error = prefs.getString(App.CLAVE, null);
+        if (error == null) return false;
+
+        android.widget.LinearLayout caja = new android.widget.LinearLayout(this);
+        caja.setOrientation(android.widget.LinearLayout.VERTICAL);
+        caja.setPadding(40, 80, 40, 40);
+
+        android.widget.TextView titulo = new android.widget.TextView(this);
+        titulo.setText("La app se cerró por este error (mándale una captura a tu profesor o a Claude):");
+        titulo.setTextSize(16);
+        caja.addView(titulo);
+
+        Button continuar = new Button(this);
+        continuar.setText("Borrar error y continuar");
+        continuar.setOnClickListener(v -> {
+            prefs.edit().remove(App.CLAVE).commit();
+            recreate();
+        });
+        caja.addView(continuar);
+
+        android.widget.TextView detalle = new android.widget.TextView(this);
+        detalle.setText(error);
+        detalle.setTextSize(11);
+        detalle.setTextIsSelectable(true);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(detalle);
+        caja.addView(scroll);
+
+        setContentView(caja);
+        return true;
     }
 
     // ---------------------------------------------------------------- LIMPIAR

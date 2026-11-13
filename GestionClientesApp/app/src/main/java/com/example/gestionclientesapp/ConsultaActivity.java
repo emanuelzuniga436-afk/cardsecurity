@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 public class ConsultaActivity extends AppCompatActivity {
@@ -27,7 +26,7 @@ public class ConsultaActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_consulta);
 
-        refClientes = FirebaseDatabase.getInstance().getReference("Clientes");
+        refClientes = FirebaseHelper.obtenerClientes(this);
 
         etBuscarDato = findViewById(R.id.etBuscarDato);
         btnBuscar    = findViewById(R.id.btnBuscar);
@@ -47,12 +46,16 @@ public class ConsultaActivity extends AppCompatActivity {
             return;
         }
 
+        if (refClientes == null) { FirebaseHelper.avisarSinConexion(this); return; }
+
         tvResultado.setText("Buscando...");
+        Runnable aviso = FirebaseHelper.avisoSiTarda(this);
 
         // Leemos UNA sola vez todo el nodo "Clientes"
         refClientes.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                FirebaseHelper.cancelarAviso(aviso);
                 // Recorremos cada cliente guardado (cada hijo del nodo)
                 for (DataSnapshot hijo : snapshot.getChildren()) {
                     Cliente c = hijo.getValue(Cliente.class);
@@ -69,6 +72,7 @@ public class ConsultaActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                FirebaseHelper.cancelarAviso(aviso);
                 tvResultado.setText("Error al consultar: " + error.getMessage());
             }
         });

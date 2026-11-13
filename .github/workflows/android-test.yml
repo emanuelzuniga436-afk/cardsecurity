@@ -4,11 +4,16 @@ on:
   push:
     paths:
       - ".github/workflows/android-test.yml"
+      - "GestionClientesApp/**"
   workflow_dispatch:
 
 jobs:
   emulador:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 34]
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +37,8 @@ jobs:
       - name: Abrir la app en el emulador y leer errores
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: ${{ matrix.api }}
+          target: google_apis
           arch: x86_64
           disable-animations: true
           script: |
